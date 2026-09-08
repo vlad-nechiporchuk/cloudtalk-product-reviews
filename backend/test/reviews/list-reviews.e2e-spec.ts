@@ -3,25 +3,16 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { db, queryClient } from '../../src/db/client';
-import { products, users, reviews, reviewPhotos, ratingAggregates } from '../../src/db/schema';
+import { users, reviews, reviewPhotos } from '../../src/db/schema';
 import { ALL_TABLE_NAMES } from '../../src/db/schema-table-names';
 import { encodeCursor } from '../../src/reviews/cursor';
+import { insertProduct } from '../support/seed';
 
 interface ReviewItem {
   id: string;
   rating: number;
   createdAt: string;
   isVerified: boolean;
-}
-
-async function insertProduct(name: string, slug: string): Promise<string> {
-  const [product] = await db
-    .insert(products)
-    .values({ name, slug, priceCents: 100, category: 'test' })
-    .returning();
-  await db.insert(ratingAggregates).values({ productId: product.id });
-
-  return product.id;
 }
 
 describe('GET /products/:productId/reviews', () => {
@@ -39,7 +30,7 @@ describe('GET /products/:productId/reviews', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
-    productId = await insertProduct('List Test Product', 'list-test');
+    productId = (await insertProduct('List Test Product', 'list-test')).id;
 
     const seededUsers = await db
       .insert(users)
@@ -117,7 +108,7 @@ describe('GET /products/:productId/reviews', () => {
   });
 
   it('breaks ties on identical created_at using id as the secondary sort key', async () => {
-    const tieProductId = await insertProduct('Tie Test Product', 'tie-test');
+    const tieProductId = (await insertProduct('Tie Test Product', 'tie-test')).id;
 
     const tieUsers = await db
       .insert(users)
@@ -193,13 +184,13 @@ describe('GET /products/:productId/reviews', () => {
   });
 
   it('returns an empty page for a product with no reviews', async () => {
-    const emptyProductId = await insertProduct('Empty Test Product', 'empty-test');
+    const emptyProductId = (await insertProduct('Empty Test Product', 'empty-test')).id;
     const res = await listReviews(emptyProductId).expect(200);
     expect(res.body).toEqual({ items: [], nextCursor: null, hasNextPage: false });
   });
 
   it('lists photoUrls for a review that has photos', async () => {
-    const photoProductId = await insertProduct('Photo Test Product', 'photo-test');
+    const photoProductId = (await insertProduct('Photo Test Product', 'photo-test')).id;
     const [photoUser] = await db
       .insert(users)
       .values({ name: 'Photo Author', email: 'photo-author@test.dev', tokenHash: 'photo-hash' })

@@ -2,25 +2,16 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
-import { db, queryClient } from '../../src/db/client';
-import { products, ratingAggregates } from '../../src/db/schema';
-import type { ProductRow } from '../../src/db/schema';
+import { queryClient } from '../../src/db/client';
 import { ALL_TABLE_NAMES } from '../../src/db/schema-table-names';
+import { insertProduct } from '../support/seed';
+import type { ProductRow } from '../../src/db/schema';
 
 describe('GET /products/:idOrSlug', () => {
   let app: INestApplication;
   let productWithReviews: ProductRow;
   let productWithNoReviews: ProductRow;
   let productWithNoAggregateRow: ProductRow;
-
-  async function insertProduct(name: string, slug: string): Promise<ProductRow> {
-    const [row] = await db
-      .insert(products)
-      .values({ name, slug, priceCents: 1000, category: 'test' })
-      .returning();
-
-    return row;
-  }
 
   beforeAll(async () => {
     await queryClient.unsafe(`TRUNCATE ${ALL_TABLE_NAMES.join(', ')} CASCADE`);
@@ -29,17 +20,11 @@ describe('GET /products/:idOrSlug', () => {
     app = moduleRef.createNestApplication();
     await app.init();
 
-    productWithReviews = await insertProduct('Product With Reviews', 'product-with-reviews');
-    await db.insert(ratingAggregates).values({
-      productId: productWithReviews.id,
-      reviewCount: 3,
-      ratingSum: 13,
-      count4: 2,
-      count5: 1,
+    productWithReviews = await insertProduct('Product With Reviews', 'product-with-reviews', {
+      aggregate: { reviewCount: 3, ratingSum: 13, count4: 2, count5: 1 },
     });
 
     productWithNoReviews = await insertProduct('Product With No Reviews', 'product-no-reviews');
-    await db.insert(ratingAggregates).values({ productId: productWithNoReviews.id });
 
     // Every product should get a rating_aggregates row transactionally on
     // creation (see RatingAggregateRepository) — this row is deliberately
@@ -47,6 +32,7 @@ describe('GET /products/:idOrSlug', () => {
     productWithNoAggregateRow = await insertProduct(
       'Product With No Aggregate Row',
       'product-no-aggregate-row',
+      { aggregate: false },
     );
   });
   // NestJS doesn't know about `queryClient` — it's a plain module singleton,

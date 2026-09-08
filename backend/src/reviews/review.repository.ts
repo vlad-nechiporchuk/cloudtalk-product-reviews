@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '../db/client';
-import { reviews, reviewPhotos, orders } from '../db/schema';
+import { reviews, reviewPhotos, reviewHelpfulVotes, orders } from '../db/schema';
 import type { ReviewRow } from '../db/schema';
 import type { Tx } from '../db/client';
 import type { Cursor, SortMode } from './cursor';
@@ -66,6 +66,38 @@ export class ReviewRepository {
       .limit(1);
 
     return !!order;
+  }
+
+  async findById(dbOrTx: Tx | typeof db, id: string): Promise<ReviewRow | null> {
+    const [row] = await dbOrTx.select().from(reviews).where(eq(reviews.id, id));
+
+    return row ?? null;
+  }
+
+  // ON CONFLICT DO NOTHING on the (reviewId, userId) primary key, not a
+  // check-then-insert — that's what makes two concurrent votes from the
+  // same user resolve to exactly one insert regardless of race timing.
+  async insertHelpfulVote(tx: Tx, reviewId: string, userId: string): Promise<boolean> {
+    const rows = await tx
+      .insert(reviewHelpfulVotes)
+      .values({ reviewId, userId })
+      .onConflictDoNothing({ target: [reviewHelpfulVotes.reviewId, reviewHelpfulVotes.userId] })
+      .returning({ reviewId: reviewHelpfulVotes.reviewId });
+
+    return rows.length > 0;
+  }
+
+  async incrementHelpfulCount(tx: Tx, reviewId: string): Promise<number> {
+    const [row] = await tx
+      .update(reviews)
+      .set({ helpfulCount: sql`${reviews.helpfulCount} + 1` })
+      .where(eq(reviews.id, reviewId))
+      .returning({ helpfulCount: reviews.helpfulCount });
+
+    // Only called right after insertHelpfulVote succeeded in this same
+    // transaction, whose own FK on reviewId already required this row to
+    // exist a statement earlier.
+    return row.helpfulCount;
   }
 
   async listPage(params: ListPageParams): Promise<ListPageResult> {

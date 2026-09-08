@@ -1,4 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '../db/client';
 import { causeCode, FOREIGN_KEY_VIOLATION, UNIQUE_VIOLATION } from '../db/postgres-error';
 import type { ReviewRow } from '../db/schema';
@@ -30,6 +37,10 @@ export interface ReviewListResult {
   items: ReviewWithPhotos[];
   nextCursor: string | null;
   hasNextPage: boolean;
+}
+
+export interface HelpfulVoteResult {
+  helpfulCount: number;
 }
 
 function toResponse(review: ReviewRow): ReviewResponse {
@@ -127,5 +138,41 @@ export class ReviewService {
     const nextCursor = lastOfPage ? encodeCursor(cursorFor(lastOfPage, query.sort)) : null;
 
     return { items, nextCursor, hasNextPage };
+  }
+
+  async castHelpfulVote(reviewId: string, userId: string): Promise<HelpfulVoteResult> {
+    const review = await this.reviews.findById(db, reviewId);
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+    if (review.userId === userId) {
+      throw new ForbiddenException("Can't vote on your own review");
+    }
+
+    try {
+      return await db.transaction(async (tx) => {
+        const inserted = await this.reviews.insertHelpfulVote(tx, reviewId, userId);
+        if (inserted) {
+          const helpfulCount = await this.reviews.incrementHelpfulCount(tx, reviewId);
+
+          return { helpfulCount };
+        }
+
+        // Already voted — read the current count instead of incrementing
+        // again, so a repeat vote is a no-op rather than double-counted.
+        // Must read here, after insertHelpfulVote, not reuse the pre-check
+        // above: a losing concurrent transaction's INSERT blocks on the
+        // primary key until the winner commits, and only a read issued
+        // after that point sees the incremented value. Non-null because
+        // the review was confirmed to exist moments ago and nothing on
+        // this app's write surface deletes one.
+        const current = await this.reviews.findById(tx, reviewId);
+
+        return { helpfulCount: current!.helpfulCount };
+      });
+    } catch (err) {
+      this.logger.error(`Failed to cast helpful vote: review ${reviewId}, voter ${userId}`, err);
+      throw err;
+    }
   }
 }

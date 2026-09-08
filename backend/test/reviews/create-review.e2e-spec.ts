@@ -1,45 +1,18 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createHash, randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { AppModule } from '../../src/app.module';
 import { db, queryClient } from '../../src/db/client';
-import {
-  users,
-  products,
-  reviews,
-  reviewPhotos,
-  ratingAggregates,
-  orders,
-} from '../../src/db/schema';
-import type { ProductRow, UserRow } from '../../src/db/schema';
+import { reviews, reviewPhotos, ratingAggregates, orders } from '../../src/db/schema';
 import { ALL_TABLE_NAMES } from '../../src/db/schema-table-names';
 import { RatingAggregateRepository } from '../../src/ratings/rating-aggregate.repository';
+import { makeUser, insertProduct } from '../support/seed';
 
 // Both describe blocks below share this module's `queryClient` singleton —
 // close it once, after both, not per describe (closing it after the first
 // would break the second's DB access).
 afterAll(() => queryClient.end());
-
-async function makeUser(): Promise<UserRow & { token: string }> {
-  const token = randomBytes(16).toString('hex');
-  const tokenHash = createHash('sha256').update(token).digest('hex');
-  const email = `e2e-${token}@test.dev`;
-  const [user] = await db.insert(users).values({ name: 'E2E User', email, tokenHash }).returning();
-
-  return { ...user, token };
-}
-
-async function insertProduct(name: string, slug: string): Promise<ProductRow> {
-  const [product] = await db
-    .insert(products)
-    .values({ name, slug, priceCents: 100, category: 'test' })
-    .returning();
-  await db.insert(ratingAggregates).values({ productId: product.id });
-
-  return product;
-}
 
 describe('POST /reviews', () => {
   let app: INestApplication;
