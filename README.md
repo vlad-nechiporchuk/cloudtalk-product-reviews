@@ -24,8 +24,12 @@ React + Vite frontend. Built for a CloudTalk take-home assignment.
 2. `cp .env.example .env`
 3. `cd backend && npm install`
 4. `cd ../frontend && npm install`
-
-(Migration and seed commands are added as they land, in a later commit.)
+5. `cd ../backend && npm run db:migrate && npm run db:migrate:test` —
+   applies migrations to both databases.
+6. `npm run seed` — creates demo users/products/reviews (safe to re-run).
+   Demo user tokens are fixed (`demo-token-marta`, `demo-token-daniel`,
+   `demo-token-ingrid`) and already wired into the frontend's user
+   switcher — no need to copy anything.
 
 ## Running it
 
@@ -48,7 +52,9 @@ npm run dev
 
 Open the URL it prints (`http://localhost:5173` by default).
 
-## Design
+## Tests
 
-See [`docs/design.md`](docs/design.md) for the full design: schema,
-indexing, transaction boundaries, and the trade-offs behind them.
+- `cd backend && npm test` — unit tests.
+- `cd backend && npm run test:e2e` — integration/e2e tests against the real
+  `reviews_test` database (needs `docker compose up -d` and migrations
+  applied — see Setup).

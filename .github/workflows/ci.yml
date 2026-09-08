@@ -7,6 +7,24 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: reviews
+          POSTGRES_PASSWORD: reviews
+          POSTGRES_DB: reviews_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reviews"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # CI has no separate dev/test database concern — the container is
+      # thrown away after the job — so both point at the same database.
+      DATABASE_URL: postgres://reviews:reviews@localhost:5432/reviews_test
+      TEST_DATABASE_URL: postgres://reviews:reviews@localhost:5432/reviews_test
     defaults:
       run:
         working-directory: backend
@@ -21,6 +39,15 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run db:migrate
+      # Exercises seed.ts against the freshly migrated schema on every push —
+      # the schema will change in most tasks ahead, and this is the only
+      # thing that would otherwise catch the seed script silently rotting
+      # (e.g. a new NOT NULL column with no default) before someone happens
+      # to run `npm run seed` locally and notices.
+      - run: npm run seed
+      - run: npm test
+      - run: npm run test:e2e
 
   frontend:
     runs-on: ubuntu-latest
