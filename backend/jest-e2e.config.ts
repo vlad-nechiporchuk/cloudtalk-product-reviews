@@ -8,6 +8,10 @@ import type { Config } from 'jest';
 // test/ uses both spec conventions: *.spec.ts and *.e2e-spec.ts. All these
 // files hit one real reviews_test database, and one of them TRUNCATEs it —
 // maxWorkers: 1 keeps that safe, not just faster.
+//
+// Run via `npm run test:e2e`, not `jest` directly: @nestjs/* ships
+// ESM-only, and requiring it needs Node's --experimental-vm-modules, set
+// as NODE_OPTIONS on the npm script.
 const config: Config = {
   rootDir: '.',
   testEnvironment: 'node',

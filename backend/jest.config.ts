@@ -1,5 +1,8 @@
 import type { Config } from 'jest';
 
+// Run via `npm test`, not `jest` directly: @nestjs/* ships ESM-only, and
+// requiring it needs Node's --experimental-vm-modules, set as NODE_OPTIONS
+// on the npm script.
 const config: Config = {
   rootDir: '.',
   testEnvironment: 'node',

@@ -8,6 +8,13 @@
       "when": 1788848704409,
       "tag": "0000_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788849833797,
+      "tag": "0001_add_users_token_hash_unique",
+      "breakpoints": true
     }
   ]
 }

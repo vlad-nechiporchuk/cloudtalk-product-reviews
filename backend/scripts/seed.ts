@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { DATABASE_URL, db, queryClient } from '../src/db/client';
 import type { Tx } from '../src/db/client';
+import { hashToken } from '../src/auth/hash-token';
 import { maskDatabaseUrl } from '../src/db/mask-database-url';
 import { ALL_TABLE_NAMES } from '../src/db/schema-table-names';
 import { users, products, orders, reviews, ratingAggregates } from '../src/db/schema';
@@ -14,10 +14,6 @@ const DEMO_USERS = [
 ];
 
 const LOCAL_HOSTS = ['localhost', '127.0.0.1'];
-
-function hash(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
 
 // This seed resets all data; restrict it to local databases.
 function assertLocalDatabase(rawUrl: string): void {
@@ -50,7 +46,9 @@ async function main(): Promise<void> {
 
     const insertedUsers = await tx
       .insert(users)
-      .values(DEMO_USERS.map((u) => ({ name: u.name, email: u.email, tokenHash: hash(u.token) })))
+      .values(
+        DEMO_USERS.map((u) => ({ name: u.name, email: u.email, tokenHash: hashToken(u.token) })),
+      )
       .returning();
 
     const primary = await createProduct(tx, {

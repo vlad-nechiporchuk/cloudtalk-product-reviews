@@ -18,7 +18,7 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
-  tokenHash: text('token_hash').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
 });
 
 export const products = pgTable('products', {
