@@ -23,7 +23,7 @@ React + Vite frontend. Built for a CloudTalk take-home assignment.
    ```
 2. `cp .env.example .env`
 3. `cd backend && npm install`
-4. `cd ../frontend && npm install`
+4. `cd ../frontend && npm install && cp .env.example .env`
 5. `cd ../backend && npm run db:migrate && npm run db:migrate:test` —
    applies migrations to both databases.
 6. `npm run seed` — creates demo users/products/reviews (safe to re-run).
