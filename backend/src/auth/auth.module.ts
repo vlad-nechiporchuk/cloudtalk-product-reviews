@@ -17,6 +17,10 @@ const drizzleUserLookup: UserLookup = {
 
 @Module({
   providers: [BearerAuthGuard, { provide: USER_LOOKUP, useValue: drizzleUserLookup }],
-  exports: [BearerAuthGuard],
+  // USER_LOOKUP must be exported alongside BearerAuthGuard, not just the
+  // guard itself: a class named in another module's @UseGuards() is
+  // instantiated fresh in *that* module's scope, so its own constructor
+  // dependencies (this token) need to be visible there too.
+  exports: [BearerAuthGuard, USER_LOOKUP],
 })
 export class AuthModule {}

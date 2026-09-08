@@ -2,22 +2,23 @@ import { eq } from 'drizzle-orm';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as schema from '../../src/db/schema';
+import {
+  causeCode as extractCode,
+  CHECK_VIOLATION,
+  UNIQUE_VIOLATION,
+  FOREIGN_KEY_VIOLATION,
+} from '../../src/db/postgres-error';
 import { ALL_TABLE_NAMES } from '../../src/db/schema-table-names';
 
 const sql = postgres(process.env.DATABASE_URL!);
 const db = drizzle(sql, { schema });
-
-// Drizzle exposes the PostgreSQL error code through error.cause.
-const CHECK_VIOLATION = '23514';
-const UNIQUE_VIOLATION = '23505';
-const FOREIGN_KEY_VIOLATION = '23503';
 
 async function causeCode(promise: Promise<unknown>): Promise<string | undefined> {
   try {
     await promise;
     return undefined;
   } catch (err) {
-    return (err as { cause?: { code?: string } }).cause?.code;
+    return extractCode(err);
   }
 }
 
