@@ -2,10 +2,13 @@ import { BadRequestException, ConflictException, Injectable, Logger } from '@nes
 import { db } from '../db/client';
 import { causeCode, FOREIGN_KEY_VIOLATION, UNIQUE_VIOLATION } from '../db/postgres-error';
 import type { ReviewRow } from '../db/schema';
+import { decodeCursor, encodeCursor } from './cursor';
+import type { Cursor, SortMode } from './cursor';
 import { ReviewRepository } from './review.repository';
 import { RatingAggregateRepository } from '../ratings/rating-aggregate.repository';
 import type { Rating } from '../ratings/rating-aggregate.repository';
 import type { CreateReviewDto } from './dto/create-review.dto';
+import type { ListReviewsQueryDto } from './dto/list-reviews-query.dto';
 
 export interface ReviewResponse {
   id: string;
@@ -19,6 +22,16 @@ export interface ReviewResponse {
   createdAt: Date;
 }
 
+export interface ReviewWithPhotos extends ReviewResponse {
+  photoUrls: string[];
+}
+
+export interface ReviewListResult {
+  items: ReviewWithPhotos[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
+}
+
 function toResponse(review: ReviewRow): ReviewResponse {
   return {
     id: review.id,
@@ -30,6 +43,19 @@ function toResponse(review: ReviewRow): ReviewResponse {
     helpfulCount: review.helpfulCount,
     isVerified: review.isVerified,
     createdAt: review.createdAt,
+  };
+}
+
+function cursorFor(review: ReviewRow, sort: SortMode): Cursor {
+  if (sort === 'newest') {
+    return { sort: 'newest', createdAt: review.createdAt.toISOString(), id: review.id };
+  }
+
+  return {
+    sort: 'highest_rated',
+    rating: review.rating,
+    createdAt: review.createdAt.toISOString(),
+    id: review.id,
   };
 }
 
@@ -75,5 +101,31 @@ export class ReviewService {
       );
       throw err;
     }
+  }
+
+  async list(productId: string, query: ListReviewsQueryDto): Promise<ReviewListResult> {
+    let cursor: Cursor | undefined;
+    if (query.cursor) {
+      const decoded = decodeCursor(query.cursor, query.sort);
+      if (!decoded) {
+        throw new BadRequestException('Invalid cursor');
+      }
+      cursor = decoded;
+    }
+
+    const { page, photoUrls, hasNextPage } = await this.reviews.listPage({
+      productId,
+      sort: query.sort,
+      rating: query.rating,
+      verified: query.verified,
+      cursor,
+    });
+
+    const items = page.map((r) => ({ ...toResponse(r), photoUrls: photoUrls.get(r.id) ?? [] }));
+
+    const lastOfPage = hasNextPage ? page.at(-1) : undefined;
+    const nextCursor = lastOfPage ? encodeCursor(cursorFor(lastOfPage, query.sort)) : null;
+
+    return { items, nextCursor, hasNextPage };
   }
 }
