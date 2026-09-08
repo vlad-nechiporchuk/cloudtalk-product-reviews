@@ -5,12 +5,14 @@ import { RatingSummary } from '../components/RatingSummary';
 import { ReviewList } from '../components/ReviewList';
 import { SortFilterBar } from '../components/SortFilterBar';
 import { EmptyState } from '../components/EmptyState';
+import { WriteReviewForm } from '../components/WriteReviewForm';
 import { DEMO_PRODUCT_SLUG } from '../api/client';
 
 export default function ProductPage() {
   const [sort, setSort] = useState<SortMode>('newest');
   const [verified, setVerified] = useState(false);
   const [rating, setRating] = useState<number | undefined>(undefined);
+  const [showForm, setShowForm] = useState(false);
 
   const product = useProduct(DEMO_PRODUCT_SLUG);
   const reviews = useReviews(product.data?.id, sort, rating, verified);
@@ -56,18 +58,31 @@ export default function ProductPage() {
         rating={rating}
         onRatingChange={setRating}
       />
-      {!hasAnyReviews ? (
-        <EmptyState />
-      ) : (
+      {showForm && <WriteReviewForm productId={data.id} onDone={() => setShowForm(false)} />}
+
+      {!hasAnyReviews && !showForm && <EmptyState onWriteReview={() => setShowForm(true)} />}
+
+      {hasAnyReviews && (
         <>
-          <SortFilterBar
-            sort={sort}
-            onSortChange={setSort}
-            verified={verified}
-            onVerifiedChange={setVerified}
-            rating={rating}
-            onRatingChange={setRating}
-          />
+          <div className="flex items-center justify-between gap-3">
+            <SortFilterBar
+              sort={sort}
+              onSortChange={setSort}
+              verified={verified}
+              onVerifiedChange={setVerified}
+              rating={rating}
+              onRatingChange={setRating}
+            />
+            {!showForm && (
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="shrink-0 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700"
+              >
+                Write a review
+              </button>
+            )}
+          </div>
 
           {reviews.isError && (
             <p role="alert" className="text-sm text-red-600">

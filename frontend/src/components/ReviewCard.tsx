@@ -1,10 +1,14 @@
 import type { ReviewItem } from '../hooks/useReviews';
+import { useHelpfulVote } from '../hooks/useHelpfulVote';
+import { ApiError } from '../api/client';
 
 interface Props {
   review: ReviewItem;
 }
 
 export function ReviewCard({ review }: Props) {
+  const vote = useHelpfulVote(review.id);
+
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4">
       <div className="flex items-center gap-2">
@@ -38,7 +42,21 @@ export function ReviewCard({ review }: Props) {
           ))}
         </div>
       )}
-      <span className="text-xs text-neutral-500">Helpful ({review.helpfulCount})</span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => vote.mutate()}
+          disabled={vote.isPending}
+          className="text-xs text-neutral-500 underline disabled:cursor-default disabled:no-underline"
+        >
+          Helpful ({review.helpfulCount})
+        </button>
+        {vote.isError && (
+          <span role="alert" className="text-xs text-red-600">
+            {vote.error instanceof ApiError ? vote.error.message : "Couldn't record your vote."}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

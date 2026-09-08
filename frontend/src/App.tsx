@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProductPage from './pages/ProductPage';
+import { UserSwitcher } from './components/UserSwitcher';
 import { ApiError } from './api/client';
 
 const queryClient = new QueryClient({
@@ -17,6 +18,9 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <div className="flex justify-end border-b border-neutral-200 px-6 py-3">
+        <UserSwitcher />
+      </div>
       <ProductPage />
     </QueryClientProvider>
   );
