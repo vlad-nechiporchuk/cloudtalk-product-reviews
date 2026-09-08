@@ -1,11 +1,14 @@
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { DATABASE_URL, db, queryClient } from '../src/db/client';
 import type { Tx } from '../src/db/client';
 import { hashToken } from '../src/auth/hash-token';
 import { maskDatabaseUrl } from '../src/db/mask-database-url';
+import { RatingAggregateRepository } from '../src/ratings/rating-aggregate.repository';
 import { ALL_TABLE_NAMES } from '../src/db/schema-table-names';
 import { users, products, orders, reviews, ratingAggregates } from '../src/db/schema';
 import type { ProductRow } from '../src/db/schema';
+
+const ratingAggregateRepository = new RatingAggregateRepository();
 
 const DEMO_USERS = [
   { name: 'Marta K.', email: 'marta@demo.dev', token: 'demo-token-marta' },
@@ -82,10 +85,7 @@ async function main(): Promise<void> {
       body: "I've had these for three weeks now and the ANC still impresses me on every commute.",
       isVerified: true,
     });
-    await tx
-      .update(ratingAggregates)
-      .set({ reviewCount: 1, ratingSum: 5, count5: 1 })
-      .where(eq(ratingAggregates.productId, primary.id));
+    await ratingAggregateRepository.applyNewRating(tx, primary.id, 5);
 
     return primary;
   });

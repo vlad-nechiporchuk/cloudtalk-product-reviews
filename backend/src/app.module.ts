@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health.controller';
+import { ProductsModule } from './products/products.module';
 import { ROOT_ENV_PATH } from './root-env-path';
 
 function validateEnv(config: Record<string, unknown>) {
@@ -21,6 +22,7 @@ function validateEnv(config: Record<string, unknown>) {
       validate: validateEnv,
     }),
     AuthModule,
+    ProductsModule,
   ],
   controllers: [HealthController],
 })
