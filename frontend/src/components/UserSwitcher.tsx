@@ -10,8 +10,6 @@ const DEMO_USERS = [
 export function UserSwitcher() {
   const [selected, setSelected] = useState(() => getCurrentToken() ?? DEMO_USERS[0].token);
 
-  // Persists the default so a visitor's first click isn't an unauthenticated
-  // request. Mount-only: onChange below persists every later selection.
   useEffect(() => {
     if (!getCurrentToken()) {
       setCurrentToken(selected);
@@ -25,12 +23,12 @@ export function UserSwitcher() {
   };
 
   return (
-    <label className="flex items-center gap-2 text-sm text-neutral-600">
+    <label className="flex items-center gap-2 text-xs text-text-secondary">
       Acting as
       <select
         value={selected}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-neutral-300 px-2 py-1 text-sm text-neutral-900"
+        className="rounded-lg border border-border-light bg-surface px-2 py-1 text-xs text-text-primary"
       >
         <option value="">— not signed in —</option>
         {DEMO_USERS.map((user) => (

@@ -27,7 +27,7 @@ export class ReviewController {
     @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(createReviewSchema)) dto: CreateReviewDto,
   ): Promise<ReviewResponse> {
-    return this.reviewService.create(user.id, dto);
+    return this.reviewService.create(user, dto);
   }
 
   @Post(':id/helpful')

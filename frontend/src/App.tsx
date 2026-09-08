@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex justify-end border-b border-neutral-200 px-6 py-3">
+      <div className="flex justify-end bg-app-bg px-6 py-2">
         <UserSwitcher />
       </div>
       <ProductPage />

@@ -26,9 +26,6 @@ describe('GET /products/:idOrSlug', () => {
 
     productWithNoReviews = await insertProduct('Product With No Reviews', 'product-no-reviews');
 
-    // Every product should get a rating_aggregates row transactionally on
-    // creation (see RatingAggregateRepository) — this row is deliberately
-    // missing, to exercise that invariant-violation path.
     productWithNoAggregateRow = await insertProduct(
       'Product With No Aggregate Row',
       'product-no-aggregate-row',

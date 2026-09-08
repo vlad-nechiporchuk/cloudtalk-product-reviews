@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { BearerAuthGuard, UserLookup } from './bearer-auth.guard';
+import { BearerAuthGuard } from './bearer-auth.guard';
+import type { UserRepository } from './user.repository';
 
 const TOKEN = 'demo-token-123';
 const TOKEN_HASH = createHash('sha256').update(TOKEN).digest('hex');
@@ -20,7 +21,7 @@ function contextWithHeader(header?: string): ExecutionContext {
 
 describe('BearerAuthGuard', () => {
   it('rejects a missing Authorization header', async () => {
-    const users: UserLookup = { findByTokenHash: jest.fn() };
+    const users: UserRepository = { findByTokenHash: jest.fn() };
     const guard = new BearerAuthGuard(users);
 
     await expect(guard.canActivate(contextWithHeader())).rejects.toThrow(UnauthorizedException);
@@ -37,7 +38,7 @@ describe('BearerAuthGuard', () => {
   });
 
   it('rejects a token with no matching user', async () => {
-    const users: UserLookup = { findByTokenHash: jest.fn().mockResolvedValue(null) };
+    const users: UserRepository = { findByTokenHash: jest.fn().mockResolvedValue(null) };
     const guard = new BearerAuthGuard(users);
 
     await expect(guard.canActivate(contextWithHeader('Bearer wrong'))).rejects.toThrow(

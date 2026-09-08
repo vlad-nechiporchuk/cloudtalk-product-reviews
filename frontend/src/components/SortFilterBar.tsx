@@ -18,32 +18,44 @@ export function SortFilterBar({
   onRatingChange,
 }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-neutral-200 pb-3">
-      <select
-        value={sort}
-        onChange={(e) => onSortChange(e.target.value as SortMode)}
-        className="rounded-lg border border-neutral-300 px-2 py-1 text-sm"
-      >
-        <option value="newest">Most recent</option>
-        <option value="highest_rated">Highest rated</option>
-      </select>
-      <label className="flex items-center gap-1.5 text-sm text-neutral-700">
-        <input
-          type="checkbox"
-          checked={verified}
-          onChange={(e) => onVerifiedChange(e.target.checked)}
-        />
-        Verified purchases only
-      </label>
+    <div className="flex flex-wrap items-center gap-3">
       {rating !== undefined && (
         <button
           type="button"
           onClick={() => onRatingChange(undefined)}
-          className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700"
+          className="inline-flex items-center gap-1.5 rounded-full bg-accent-bg px-2.5 py-1 text-xs font-semibold text-accent"
         >
-          {rating} star only ×
+          {rating} star only
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            aria-hidden="true"
+          >
+            <path d="M4 4l16 16M20 4L4 20" />
+          </svg>
         </button>
       )}
+      <label className="flex items-center gap-1.5 text-sm text-text-secondary">
+        <input
+          type="checkbox"
+          checked={verified}
+          onChange={(e) => onVerifiedChange(e.target.checked)}
+          className="accent-accent"
+        />
+        Verified purchases only
+      </label>
+      <select
+        value={sort}
+        onChange={(e) => onSortChange(e.target.value as SortMode)}
+        className="ml-auto rounded-lg border border-border-light bg-surface px-2.5 py-1.5 text-sm text-text-primary"
+      >
+        <option value="newest">Most recent</option>
+        <option value="highest_rated">Highest rated</option>
+      </select>
     </div>
   );
 }

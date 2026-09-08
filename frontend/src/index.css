@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sora: "Sora", system-ui, sans-serif;
+  --font-sans: "Source Sans 3", -apple-system, "Segoe UI", sans-serif;
+
+  --color-app-bg: oklch(98% 0.004 90);
+  --color-surface: oklch(100% 0 0);
+  --color-border-subtle: oklch(90% 0.005 90);
+  --color-border-light: oklch(88% 0.005 90);
+  --color-bg-muted: oklch(95% 0.005 90);
+
+  --color-text-primary: oklch(20% 0.005 90);
+  --color-text-heading: oklch(15% 0.005 90);
+  --color-text-body: oklch(30% 0.005 90);
+  --color-text-secondary: oklch(45% 0.01 90);
+  --color-text-tertiary: oklch(50% 0.01 90);
+
+  --color-accent: oklch(55% 0.15 255);
+  --color-accent-hover: oklch(48% 0.15 255);
+  --color-accent-bg: oklch(93% 0.04 255);
+  --color-accent-bg-soft: oklch(93% 0.02 255);
+
+  --color-star-fill: oklch(75% 0.15 75);
+  --color-star-empty: oklch(90% 0.01 90);
+
+  --color-success: oklch(50% 0.15 150);
+  --color-success-bg: oklch(95% 0.04 150);
+
+  --color-danger: oklch(55% 0.2 25);
+}
+
 body {
   margin: 0;
+  background: var(--color-app-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
 }

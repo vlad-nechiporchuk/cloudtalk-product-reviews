@@ -83,13 +83,20 @@ export const reviews = pgTable(
   ],
 );
 
-export const reviewPhotos = pgTable('review_photos', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  reviewId: uuid('review_id')
-    .notNull()
-    .references(() => reviews.id),
-  url: text('url').notNull(),
-});
+export const reviewPhotos = pgTable(
+  'review_photos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reviewId: uuid('review_id')
+      .notNull()
+      .references(() => reviews.id),
+    url: text('url').notNull(),
+  },
+  (t) => [
+    // PostgreSQL does not automatically index foreign-key columns.
+    index('review_photos_review_id_idx').on(t.reviewId),
+  ],
+);
 
 export const reviewHelpfulVotes = pgTable(
   'review_helpful_votes',
@@ -120,7 +127,6 @@ export const ratingAggregates = pgTable(
     count5: integer('count_5').notNull().default(0),
   },
   (t) => [
-    // Keep the total count and rating sum consistent with the per-star counts.
     check(
       'rating_aggregates_count_sum_matches_review_count',
       sql`${t.count1} + ${t.count2} + ${t.count3} + ${t.count4} + ${t.count5} = ${t.reviewCount}`,
@@ -129,10 +135,7 @@ export const ratingAggregates = pgTable(
       'rating_aggregates_rating_sum_matches_counts',
       sql`${t.count1} + 2 * ${t.count2} + 3 * ${t.count3} + 4 * ${t.count4} + 5 * ${t.count5} = ${t.ratingSum}`,
     ),
-    // The two checks above are equalities, which a negative count can
-    // still satisfy (e.g. count5 = -1, reviewCount = -1). Only a per-star
-    // floor of zero rules that out; it also makes review_count and
-    // rating_sum non-negative as a consequence, with no separate check.
+    // Equality constraints alone would still allow negative counters.
     check(
       'rating_aggregates_counts_non_negative',
       sql`${t.count1} >= 0 AND ${t.count2} >= 0 AND ${t.count3} >= 0 AND ${t.count4} >= 0 AND ${t.count5} >= 0`,

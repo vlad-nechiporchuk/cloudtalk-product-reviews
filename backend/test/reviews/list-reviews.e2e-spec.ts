@@ -10,6 +10,7 @@ import { insertProduct } from '../support/seed';
 
 interface ReviewItem {
   id: string;
+  userName: string;
   rating: number;
   createdAt: string;
   isVerified: boolean;
@@ -65,13 +66,17 @@ describe('GET /products/:productId/reviews', () => {
     expect(page1.body.hasNextPage).toBe(true);
     const ids1 = page1.body.items.map((r: ReviewItem) => r.id);
 
+    // The newest review (i=0, createdAt closest to now) was authored by the
+    // 0th seeded user ("U0") — proves the join returns the actual author's
+    // name for a known row, not just any non-null string.
+    expect(page1.body.items[0].userName).toBe('U0');
+
     const page2 = await listReviews(
       productId,
       `?sort=newest&cursor=${encodeURIComponent(page1.body.nextCursor)}`,
     ).expect(200);
     const ids2 = page2.body.items.map((r: ReviewItem) => r.id);
 
-    // 25 reviews seeded in beforeAll, page size 20 -> page 2 holds exactly the remaining 5.
     expect(page2.body.items).toHaveLength(5);
     expect(page2.body.hasNextPage).toBe(false);
     expect(page2.body.nextCursor).toBeNull();

@@ -26,10 +26,8 @@ export class RatingAggregateRepository {
     return row ?? null;
   }
 
-  // An upsert, not a plain UPDATE: the row should always already exist
-  // (created transactionally with its product), but a plain UPDATE would
-  // silently affect zero rows if that invariant were ever violated — an
-  // upsert self-heals by creating it instead.
+  // This handles a missing aggregate for a new product; repairing an
+  // existing product requires recomputing all of its reviews.
   async applyNewRating(tx: Tx, productId: string, rating: Rating): Promise<void> {
     const { field, column } = RATING_COUNT[rating];
 

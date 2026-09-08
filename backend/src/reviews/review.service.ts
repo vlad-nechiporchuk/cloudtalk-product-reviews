@@ -12,6 +12,8 @@ import type { ReviewRow } from '../db/schema';
 import { decodeCursor, encodeCursor } from './cursor';
 import type { Cursor, SortMode } from './cursor';
 import { ReviewRepository } from './review.repository';
+import type { ReviewRowWithAuthor } from './review.repository';
+import type { AuthenticatedUser } from '../auth/bearer-auth.guard';
 import { RatingAggregateRepository } from '../ratings/rating-aggregate.repository';
 import type { Rating } from '../ratings/rating-aggregate.repository';
 import type { CreateReviewDto } from './dto/create-review.dto';
@@ -21,6 +23,7 @@ export interface ReviewResponse {
   id: string;
   productId: string;
   userId: string;
+  userName: string;
   rating: number;
   title: string | null;
   body: string;
@@ -43,11 +46,12 @@ export interface HelpfulVoteResult {
   helpfulCount: number;
 }
 
-function toResponse(review: ReviewRow): ReviewResponse {
+function toResponse(review: ReviewRowWithAuthor): ReviewResponse {
   return {
     id: review.id,
     productId: review.productId,
     userId: review.userId,
+    userName: review.userName,
     rating: review.rating,
     title: review.title,
     body: review.body,
@@ -79,13 +83,13 @@ export class ReviewService {
     private readonly ratings: RatingAggregateRepository,
   ) {}
 
-  async create(userId: string, input: CreateReviewDto): Promise<ReviewResponse> {
+  async create(author: AuthenticatedUser, input: CreateReviewDto): Promise<ReviewResponse> {
     try {
       const created = await db.transaction(async (tx) => {
-        const isVerified = await this.reviews.hasVerifiedPurchase(tx, userId, input.productId);
+        const isVerified = await this.reviews.hasVerifiedPurchase(tx, author.id, input.productId);
         const review = await this.reviews.insert(tx, {
           productId: input.productId,
-          userId,
+          userId: author.id,
           rating: input.rating,
           title: input.title,
           body: input.body,
@@ -97,7 +101,7 @@ export class ReviewService {
         return review;
       });
 
-      return toResponse(created);
+      return toResponse({ ...created, userName: author.name });
     } catch (err) {
       const code = causeCode(err);
       if (code === UNIQUE_VIOLATION) {
@@ -107,7 +111,7 @@ export class ReviewService {
         throw new BadRequestException('Unknown product');
       }
       this.logger.error(
-        `Failed to create review for user ${userId}, product ${input.productId}`,
+        `Failed to create review for user ${author.id}, product ${input.productId}`,
         err,
       );
       throw err;
@@ -158,14 +162,9 @@ export class ReviewService {
           return { helpfulCount };
         }
 
-        // Already voted — read the current count instead of incrementing
-        // again, so a repeat vote is a no-op rather than double-counted.
-        // Must read here, after insertHelpfulVote, not reuse the pre-check
-        // above: a losing concurrent transaction's INSERT blocks on the
-        // primary key until the winner commits, and only a read issued
-        // after that point sees the incremented value. Non-null because
-        // the review was confirmed to exist moments ago and nothing on
-        // this app's write surface deletes one.
+        // A conflicting insert waits for the winning transaction, so read
+        // the count here rather than reuse the value fetched before the
+        // insert.
         const current = await this.reviews.findById(tx, reviewId);
 
         return { helpfulCount: current!.helpfulCount };

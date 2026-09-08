@@ -1,24 +1,11 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { hashToken } from './hash-token';
+import { UserRepository } from './user.repository';
 
 export interface AuthenticatedUser {
   id: string;
   name: string;
 }
-
-export interface UserLookup {
-  findByTokenHash(tokenHash: string): Promise<AuthenticatedUser | null>;
-}
-
-// A TypeScript interface erases at runtime and can't itself be a DI token,
-// so UserLookup is provided under this token instead.
-export const USER_LOOKUP = Symbol('UserLookup');
 
 interface RequestWithUser {
   headers: { authorization?: string };
@@ -27,7 +14,7 @@ interface RequestWithUser {
 
 @Injectable()
 export class BearerAuthGuard implements CanActivate {
-  constructor(@Inject(USER_LOOKUP) private readonly users: UserLookup) {}
+  constructor(private readonly users: UserRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();

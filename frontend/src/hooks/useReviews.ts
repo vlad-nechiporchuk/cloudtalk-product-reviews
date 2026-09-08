@@ -1,13 +1,12 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api/client';
 
-// Shape matches backend/src/reviews/review.service.ts's ReviewWithPhotos —
-// hand-duplicated (no shared package in this take-home), so check there
-// when this drifts.
+// Keep this client type in sync with the backend response.
 export interface ReviewItem {
   id: string;
   productId: string;
   userId: string;
+  userName: string;
   rating: number;
   title: string | null;
   body: string;
@@ -48,8 +47,6 @@ export function useReviews(
       return apiFetch<ReviewsPage>(`/products/${productId}/reviews?${params}`);
     },
     initialPageParam: undefined as string | undefined,
-    // Gate on hasNextPage, not just nextCursor's presence — if they ever
-    // disagree, this fails closed (stop paginating) rather than open.
     getNextPageParam: (last) => (last.hasNextPage ? (last.nextCursor ?? undefined) : undefined),
     enabled: !!productId,
   });

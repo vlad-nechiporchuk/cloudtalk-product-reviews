@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '../db/client';
-import { reviews, reviewPhotos, reviewHelpfulVotes, orders } from '../db/schema';
+import { reviews, reviewPhotos, reviewHelpfulVotes, orders, users } from '../db/schema';
 import type { ReviewRow } from '../db/schema';
 import type { Tx } from '../db/client';
 import type { Cursor, SortMode } from './cursor';
@@ -21,13 +21,15 @@ export interface ListPageParams {
   sort: SortMode;
   rating?: number;
   verified?: boolean;
-  // Expected to already match `sort` — decodeCursor(query.cursor, query.sort)
-  // enforces that one layer up, before this is ever called.
   cursor?: Cursor;
 }
 
+export interface ReviewRowWithAuthor extends ReviewRow {
+  userName: string;
+}
+
 export interface ListPageResult {
-  page: ReviewRow[];
+  page: ReviewRowWithAuthor[];
   photoUrls: Map<string, string[]>;
   hasNextPage: boolean;
 }
@@ -74,9 +76,7 @@ export class ReviewRepository {
     return row ?? null;
   }
 
-  // ON CONFLICT DO NOTHING on the (reviewId, userId) primary key, not a
-  // check-then-insert — that's what makes two concurrent votes from the
-  // same user resolve to exactly one insert regardless of race timing.
+  // The unique key makes concurrent duplicate votes idempotent.
   async insertHelpfulVote(tx: Tx, reviewId: string, userId: string): Promise<boolean> {
     const rows = await tx
       .insert(reviewHelpfulVotes)
@@ -94,9 +94,10 @@ export class ReviewRepository {
       .where(eq(reviews.id, reviewId))
       .returning({ helpfulCount: reviews.helpfulCount });
 
-    // Only called right after insertHelpfulVote succeeded in this same
-    // transaction, whose own FK on reviewId already required this row to
-    // exist a statement earlier.
+    if (!row) {
+      throw new Error(`incrementHelpfulCount: review ${reviewId} not found`);
+    }
+
     return row.helpfulCount;
   }
 
@@ -117,11 +118,22 @@ export class ReviewRepository {
         ? [desc(reviews.createdAt), desc(reviews.id)]
         : [desc(reviews.rating), desc(reviews.createdAt), desc(reviews.id)];
 
-    // One more row than a page holds — its presence (or absence) after the
-    // slice below is what hasNextPage reports, with no separate COUNT query.
+    // Fetch one extra row to detect the next page.
     const rows = await db
-      .select()
+      .select({
+        id: reviews.id,
+        productId: reviews.productId,
+        userId: reviews.userId,
+        rating: reviews.rating,
+        title: reviews.title,
+        body: reviews.body,
+        helpfulCount: reviews.helpfulCount,
+        isVerified: reviews.isVerified,
+        createdAt: reviews.createdAt,
+        userName: users.name,
+      })
       .from(reviews)
+      .innerJoin(users, eq(reviews.userId, users.id))
       .where(and(...conditions))
       .orderBy(...orderBy)
       .limit(PAGE_SIZE + 1);
@@ -129,6 +141,7 @@ export class ReviewRepository {
     const page = rows.slice(0, PAGE_SIZE);
     const hasNextPage = rows.length > PAGE_SIZE;
 
+    // Photos are loaded separately to avoid multiplying review rows.
     const photos =
       page.length > 0
         ? await db

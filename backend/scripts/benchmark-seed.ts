@@ -18,8 +18,6 @@ async function insertUsersBatch(startIndex: number, count: number): Promise<stri
   const rows = Array.from({ length: count }, (_, i) => ({
     name: `Bench User ${startIndex + i}`,
     email: `bench-${startIndex + i}@bench.dev`,
-    // Real, unique per row — the column is UNIQUE, so the fixed placeholder
-    // string a demo seed can get away with (one row) would collide here.
     tokenHash: `bench-token-${startIndex + i}`,
   }));
   const inserted = await db.insert(users).values(rows).returning({ id: users.id });

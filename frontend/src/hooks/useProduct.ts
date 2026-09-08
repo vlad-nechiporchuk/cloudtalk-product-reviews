@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../api/client';
 
-// Shape matches backend/src/products/product.service.ts's ProductSummary —
-// hand-duplicated (no shared package in this take-home), so check there
-// when this drifts.
+// Keep this client type in sync with the backend response.
 export interface ProductSummary {
   id: string;
   name: string;

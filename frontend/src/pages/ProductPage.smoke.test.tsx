@@ -33,6 +33,7 @@ const REVIEW_FIXTURE: ReviewItem = {
   id: 'r1',
   productId: 'p1',
   userId: 'u1',
+  userName: 'Marta K.',
   rating: 5,
   title: 'Great sound',
   body: 'Loved these headphones on every commute.',
@@ -79,6 +80,7 @@ describe('ProductPage', () => {
     renderProductPage();
 
     expect(await screen.findByText('Loved these headphones on every commute.')).toBeInTheDocument();
+    expect(screen.getByText('Marta K.')).toBeInTheDocument();
   });
 
   it('casts a helpful vote and shows the updated count', async () => {
@@ -136,7 +138,7 @@ describe('ProductPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Write the first review' }));
     fireEvent.click(screen.getByRole('radio', { name: '5 star' }));
-    fireEvent.change(screen.getByPlaceholderText('Your review'), {
+    fireEvent.change(screen.getByLabelText('Your review'), {
       target: { value: 'Excellent build quality.' },
     });
 
@@ -146,6 +148,7 @@ describe('ProductPage', () => {
           id: 'r2',
           productId: PRODUCT_FIXTURE.id,
           userId: 'u2',
+          userName: 'Daniel P.',
           rating: 5,
           title: null,
           body: 'Excellent build quality.',

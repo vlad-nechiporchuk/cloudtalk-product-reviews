@@ -32,8 +32,6 @@ describe('cursor encode/decode', () => {
   });
 
   it('rejects a type-correct but semantically invalid cursor', () => {
-    // These pass a plain typeof check but would fail as a raw SQL
-    // uuid/timestamptz parameter.
     const badId = encodeCursor({
       sort: 'newest',
       createdAt: '2026-09-08T10:00:00.000Z',

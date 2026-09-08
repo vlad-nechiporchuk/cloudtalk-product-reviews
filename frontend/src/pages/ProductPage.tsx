@@ -6,6 +6,7 @@ import { ReviewList } from '../components/ReviewList';
 import { SortFilterBar } from '../components/SortFilterBar';
 import { EmptyState } from '../components/EmptyState';
 import { WriteReviewForm } from '../components/WriteReviewForm';
+import { ProductHeader } from '../components/ProductHeader';
 import { DEMO_PRODUCT_SLUG } from '../api/client';
 
 export default function ProductPage() {
@@ -18,11 +19,11 @@ export default function ProductPage() {
   const reviews = useReviews(product.data?.id, sort, rating, verified);
 
   if (product.isLoading) {
-    return <p className="p-8 text-sm text-neutral-500">Loading…</p>;
+    return <p className="p-8 text-sm text-text-secondary">Loading…</p>;
   }
   if (product.isError || !product.data) {
     return (
-      <p role="alert" className="p-8 text-sm text-red-600">
+      <p role="alert" className="p-8 text-sm text-danger">
         Something went wrong loading this product.{' '}
         <button type="button" className="underline" onClick={() => product.refetch()}>
           Retry
@@ -49,22 +50,50 @@ export default function ProductPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-6">
-      <h1 className="text-2xl font-bold text-neutral-900">{data.name}</h1>
-      <RatingSummary
+    <div className="min-h-screen">
+      <ProductHeader
+        name={data.name}
+        category={data.category}
+        priceCents={data.priceCents}
         averageRating={data.averageRating}
         reviewCount={data.reviewCount}
-        ratingCounts={data.ratingCounts}
-        rating={rating}
-        onRatingChange={setRating}
+        wide={hasAnyReviews}
       />
-      {showForm && <WriteReviewForm productId={data.id} onDone={() => setShowForm(false)} />}
 
-      {!hasAnyReviews && !showForm && <EmptyState onWriteReview={() => setShowForm(true)} />}
+      {showForm && (
+        <WriteReviewForm
+          productId={data.id}
+          productName={data.name}
+          onDone={() => setShowForm(false)}
+        />
+      )}
 
-      {hasAnyReviews && (
-        <>
-          <div className="flex items-center justify-between gap-3">
+      {!hasAnyReviews ? (
+        <div className="mx-auto max-w-[760px] px-8 py-10">
+          <EmptyState onWriteReview={() => setShowForm(true)} />
+        </div>
+      ) : (
+        <div className="mx-auto grid max-w-[1120px] grid-cols-1 gap-10 px-8 py-10 md:grid-cols-[320px_1fr]">
+          <div className="flex flex-col gap-5 rounded-2xl border border-border-subtle bg-surface p-6.5 md:sticky md:top-6 md:self-start">
+            <RatingSummary
+              averageRating={data.averageRating}
+              reviewCount={data.reviewCount}
+              ratingCounts={data.ratingCounts}
+              rating={rating}
+              onRatingChange={setRating}
+            />
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="rounded-lg bg-accent px-4.5 py-3 text-sm font-semibold text-white"
+            >
+              Write a review
+            </button>
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-4">
+            <span className="font-sora text-lg font-bold text-text-primary">Customer reviews</span>
+
             <SortFilterBar
               sort={sort}
               onSortChange={setSort}
@@ -73,57 +102,48 @@ export default function ProductPage() {
               rating={rating}
               onRatingChange={setRating}
             />
-            {!showForm && (
-              <button
-                type="button"
-                onClick={() => setShowForm(true)}
-                className="shrink-0 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700"
-              >
-                Write a review
-              </button>
+
+            {reviews.isError && (
+              <p role="alert" className="text-sm text-danger">
+                Couldn't load reviews.{' '}
+                <button type="button" className="underline" onClick={() => reviews.refetch()}>
+                  Retry
+                </button>
+              </p>
+            )}
+
+            {reviews.isLoading && (
+              <p className="py-8 text-center text-sm text-text-secondary">Loading reviews…</p>
+            )}
+
+            {noResultsForFilters && (
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border-light py-8 text-center text-sm text-text-secondary">
+                <p className="m-0">No reviews match these filters.</p>
+                <button type="button" className="underline" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              </div>
+            )}
+
+            {unexpectedlyEmpty && (
+              <p role="alert" className="py-8 text-center text-sm text-danger">
+                Reviews couldn't be displayed right now.{' '}
+                <button type="button" className="underline" onClick={() => reviews.refetch()}>
+                  Retry
+                </button>
+              </p>
+            )}
+
+            {!reviews.isError && items.length > 0 && (
+              <ReviewList
+                items={items}
+                hasNextPage={reviews.hasNextPage}
+                isFetchingNextPage={reviews.isFetchingNextPage}
+                onLoadMore={() => reviews.fetchNextPage()}
+              />
             )}
           </div>
-
-          {reviews.isError && (
-            <p role="alert" className="text-sm text-red-600">
-              Couldn't load reviews.{' '}
-              <button type="button" className="underline" onClick={() => reviews.refetch()}>
-                Retry
-              </button>
-            </p>
-          )}
-
-          {reviews.isLoading && (
-            <p className="py-8 text-center text-sm text-neutral-500">Loading reviews…</p>
-          )}
-
-          {noResultsForFilters && (
-            <div className="flex flex-col items-center gap-2 py-8 text-center text-sm text-neutral-500">
-              <p>No reviews match these filters.</p>
-              <button type="button" className="underline" onClick={clearFilters}>
-                Clear filters
-              </button>
-            </div>
-          )}
-
-          {unexpectedlyEmpty && (
-            <p role="alert" className="py-8 text-center text-sm text-red-600">
-              Reviews couldn't be displayed right now.{' '}
-              <button type="button" className="underline" onClick={() => reviews.refetch()}>
-                Retry
-              </button>
-            </p>
-          )}
-
-          {!reviews.isError && items.length > 0 && (
-            <ReviewList
-              items={items}
-              hasNextPage={reviews.hasNextPage}
-              isFetchingNextPage={reviews.isFetchingNextPage}
-              onLoadMore={() => reviews.fetchNextPage()}
-            />
-          )}
-        </>
+        </div>
       )}
     </div>
   );

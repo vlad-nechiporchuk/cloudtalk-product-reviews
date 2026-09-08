@@ -44,7 +44,12 @@ describe('POST /reviews', () => {
       })
       .expect(201);
 
-    expect(res.body).toMatchObject({ productId, userId: user.id, rating: 4 });
+    expect(res.body).toMatchObject({
+      productId,
+      userId: user.id,
+      userName: user.name,
+      rating: 4,
+    });
 
     const [aggregate] = await db
       .select()
@@ -103,9 +108,6 @@ describe('POST /reviews', () => {
   });
 
   it('rejects a non-integer rating with 400', async () => {
-    // RATING_COUNT in RatingAggregateRepository is keyed 1-5; a non-integer
-    // that slipped past this check would hit an undefined lookup and crash
-    // mid-transaction (500) instead of failing cleanly here.
     const user = await makeUser();
     await request(app.getHttpServer())
       .post('/reviews')
@@ -120,6 +122,44 @@ describe('POST /reviews', () => {
       .post('/reviews')
       .set('Authorization', `Bearer ${user.token}`)
       .send({ productId, rating: 5, body: 'x'.repeat(2001) })
+      .expect(400);
+  });
+
+  it('rejects a whitespace-only body with 400', async () => {
+    const user = await makeUser();
+    await request(app.getHttpServer())
+      .post('/reviews')
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({ productId, rating: 5, body: '   ' })
+      .expect(400);
+  });
+
+  it('trims a padded body before storing it', async () => {
+    const user = await makeUser();
+    const res = await request(app.getHttpServer())
+      .post('/reviews')
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({ productId, rating: 5, body: '  Solid product.  ' })
+      .expect(201);
+    expect(res.body.body).toBe('Solid product.');
+  });
+
+  it('trims a whitespace-only title down to none, rather than storing blank padding', async () => {
+    const user = await makeUser();
+    const res = await request(app.getHttpServer())
+      .post('/reviews')
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({ productId, rating: 5, title: '   ', body: 'x' })
+      .expect(201);
+    expect(res.body.title).toBe('');
+  });
+
+  it('rejects a non-http(s) photo URL with 400', async () => {
+    const user = await makeUser();
+    await request(app.getHttpServer())
+      .post('/reviews')
+      .set('Authorization', `Bearer ${user.token}`)
+      .send({ productId, rating: 5, body: 'x', photoUrls: ['javascript:alert(1)'] })
       .expect(400);
   });
 

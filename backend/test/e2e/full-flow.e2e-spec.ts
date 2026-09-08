@@ -53,10 +53,6 @@ describe('full review flow', () => {
       .expect(200);
     expect(voted.body.helpfulCount).toBe(1);
 
-    // The vote's effect on the read path, not just the mutation's own
-    // response — every individual endpoint already has its own coverage,
-    // so propagation through to a fresh list fetch is what this test
-    // uniquely adds over those.
     const listAfterVote = await request(app.getHttpServer())
       .get(`/products/${product.id}/reviews`)
       .expect(200);

@@ -5,9 +5,7 @@ import type { ReviewListResult } from './review.service';
 import { listReviewsQuerySchema } from './dto/list-reviews-query.dto';
 import type { ListReviewsQueryDto } from './dto/list-reviews-query.dto';
 
-// Separate from ReviewController so a future write route added there keeps
-// inheriting its class-level @UseGuards by default, instead of staying
-// public unless someone remembers to add one.
+// Keep public read routes separate from authenticated review mutations.
 @Controller('products/:productId/reviews')
 export class ProductReviewController {
   constructor(private readonly reviewService: ReviewService) {}

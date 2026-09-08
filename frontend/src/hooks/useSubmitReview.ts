@@ -9,13 +9,12 @@ export interface SubmitReviewInput {
   photoUrls: string[];
 }
 
-// Shape matches backend/src/reviews/review.service.ts's ReviewResponse —
-// hand-duplicated (no shared package in this take-home), so check there
-// when this drifts.
+// Keep this client type in sync with the backend response.
 interface CreatedReview {
   id: string;
   productId: string;
   userId: string;
+  userName: string;
   rating: number;
   title: string | null;
   body: string;

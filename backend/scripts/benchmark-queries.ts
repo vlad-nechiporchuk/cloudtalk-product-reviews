@@ -4,21 +4,7 @@ import { assertLocalDatabase } from '../src/db/assert-local-database';
 
 const REPEATS = 3;
 
-// Four fixes from the design review baked in: (1) both the offset and
-// keyset "deep page" queries fetch LIMIT 20, not 20 vs 21 — the real
-// endpoint's keyset query fetches 21 for hasNextPage, a ~5% difference
-// dwarfed by what OFFSET pays to scan 100,000 rows, so it's left out of
-// this comparison rather than confounding it; (2) the cursor is built from
-// the row at OFFSET 99999, not 100000 — the query uses strict `<`, so a
-// cursor from the row AT offset 100000 would exclude it and start the
-// "equivalent" page one row late; (3) a sanity check proves the offset and
-// keyset "equivalent" pages return the same rows before trusting their
-// timings as comparable; (4) the reported wall time comes from REPEATS
-// plain runs of the query alone, separate from the EXPLAIN (ANALYZE,
-// BUFFERS) pass — EXPLAIN ANALYZE adds a gettimeofday() call per tuple per
-// plan node, which is ~600k calls on the 300k-row aggregation and ~4 on
-// the single-row denormalized read, an asymmetric overhead that would
-// otherwise be baked into the very comparison this script exists to make.
+// Measure plain queries separately from EXPLAIN ANALYZE overhead.
 async function measure(label: string, makeQuery: () => PendingQuery<Row[]>): Promise<void> {
   console.log(`\n=== ${label} ===`);
 

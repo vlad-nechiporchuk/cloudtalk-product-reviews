@@ -24,12 +24,7 @@ export function encodeCursor(cursor: Cursor): string {
   return Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
 }
 
-// Values, not just shape: these fields reach a raw SQL tuple comparison
-// against uuid/timestamptz/smallint columns, so a well-formed-but-bogus
-// cursor (non-UUID id, unparseable date, out-of-range rating) must be
-// rejected here, not surface as a Postgres cast error later. The `sort`
-// literal in each schema also rejects a cursor minted for the other sort
-// order, so no separate mismatch check is needed.
+// Validate cursor values before using them in the SQL tuple comparison.
 export function decodeCursor(raw: string, expectedSort: SortMode): Cursor | null {
   let parsed: unknown;
   try {

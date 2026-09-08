@@ -15,6 +15,13 @@
       "when": 1788849833797,
       "tag": "0001_add_users_token_hash_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788879600000,
+      "tag": "0002_add_review_photos_review_id_index",
+      "breakpoints": true
     }
   ]
 }
