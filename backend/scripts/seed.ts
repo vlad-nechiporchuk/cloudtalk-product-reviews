@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { DATABASE_URL, db, queryClient } from '../src/db/client';
 import type { Tx } from '../src/db/client';
+import { assertLocalDatabase } from '../src/db/assert-local-database';
 import { hashToken } from '../src/auth/hash-token';
 import { maskDatabaseUrl } from '../src/db/mask-database-url';
 import { RatingAggregateRepository } from '../src/ratings/rating-aggregate.repository';
@@ -15,20 +16,6 @@ const DEMO_USERS = [
   { name: 'Daniel P.', email: 'daniel@demo.dev', token: 'demo-token-daniel' },
   { name: 'Ingrid S.', email: 'ingrid@demo.dev', token: 'demo-token-ingrid' },
 ];
-
-const LOCAL_HOSTS = ['localhost', '127.0.0.1'];
-
-// This seed resets all data; restrict it to local databases.
-function assertLocalDatabase(rawUrl: string): void {
-  const { hostname } = new URL(rawUrl);
-  if (!LOCAL_HOSTS.includes(hostname)) {
-    throw new Error(
-      `Refusing to run the demo seed against "${hostname}" — this script TRUNCATEs every table, ` +
-        `and only runs against a local database (${LOCAL_HOSTS.join(' or ')}). If DATABASE_URL is ` +
-        `set in your shell (not just .env), unset it — dotenv does not override an already-set variable.`,
-    );
-  }
-}
 
 async function createProduct(
   tx: Tx,
