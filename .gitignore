@@ -1,0 +1,12 @@
+node_modules/
+dist/
+# internal working docs — design notes, implementation plan — live outside
+# this repo entirely (../cloudtalk-product-reviews-docs); this is defense
+# in depth in case one ever ends up back in this directory by mistake.
+docs/
+coverage/
+.env
+*.tsbuildinfo
+.DS_Store
+.idea/
+.vscode/
